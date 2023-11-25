@@ -20,20 +20,30 @@ let string_of_base (b : base) : string =
 
 (* explode a string into a char list *)
 let explode (str : string) : char list =
-  failwith "À compléter"
-
+  List.init (String.length str) (fun indice -> str.[indice]);;
+ (* List.init var1 var2  permet de creer une list de taille var1 en appliquant 
+    la fonction donner en var2 pour chaque element de la liste  *)
 
 (* conversions *)
 let base_of_char (c : char) : base =
-  failwith "À compléter"
+  match c with
+   | 'A' -> A
+   | 'C' -> C
+   | 'G' -> G
+   | 'T' -> T
+   | _  -> WC (*les autre cas*)
 
-
+(* convertir string en DNA    *)
 let dna_of_string (s : string) : base list =
-  failwith "À compléter"
+  (* convertir chaque element de la liste retourner par explode en base *)
+  List.map (base_of_char) (explode s)
 
 
+(* convertir DNA en string   *)
 let string_of_dna (seq : dna) : string =
-  failwith "À compléter"
+  (* d'abord convertir ADN en liste de string    *)
+  (* ensuite la liste obtenue avant en string  *)
+  String.concat ""  (List.map (string_of_base) (seq));;
 
 
 
