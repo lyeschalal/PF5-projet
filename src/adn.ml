@@ -57,8 +57,12 @@ let string_of_dna (seq : dna) : string =
 
 
 (* if list = pre@suf, return Some suf. otherwise, return None *)
-let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
-  failwith "A faire"
+let rec cut_prefix pre l =
+  match ( pre , l ) with
+  |( _::_ ,[] ) -> None
+  |( [] , r2 ) -> Some r2 
+  |( a::r1 , b::r2 ) -> if a != b then None else cut_prefix r1 r2 ;;
+
 
 (*
   cut_prefix [1; 2; 3] [1; 2; 3; 4] = Some [4]
@@ -70,9 +74,15 @@ let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
 (* return the prefix and the suffix of the first occurrence of a slice,
    or None if this occurrence does not exist.
 *)
-let first_occ (slice : 'a list) (list : 'a list)
-    : ('a list * 'a list) option =
-  failwith "À compléter"
+let rec first_occ slice l = 
+  let rec aux_first_occ before liste =
+    match cut_prefix slice liste with 
+    |Some after -> Some (List.rev before,after)
+    | None ->
+        match liste with
+        | [] -> None
+        | hd::reste -> aux_first_occ (hd::before) reste
+  in aux_first_occ [] l 
 (*
   first_occ [1; 2] [1; 1; 1; 2; 3; 4; 1; 2] = Some ([1; 1], [3; 4; 1; 2])
   first_occ [1; 1] [1; 1; 1; 2; 3; 4; 1; 2] = Some ([], [1; 2; 3; 4; 1; 2])
