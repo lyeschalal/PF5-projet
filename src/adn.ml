@@ -90,16 +90,21 @@ let rec first_occ slice l =
  *)
 
 
-let rec slices_between
-          (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
-  failwith "A faire"
+ let rec slices_between
+ (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
+match first_occ start list with 
+|None -> []
+|Some (pre,suf) -> match first_occ stop suf with 
+            |None -> []
+            |Some (pre_2 , suf_2) -> pre_2::(slices_between start stop suf_2)
 
-(*
+
+ (*
   slices_between [1; 1] [1; 2] [1; 1; 1; 1; 2; 1; 3; 1; 2] = [[1]]
  *)
 
-let cut_genes (dna : dna) : (dna list) =
-  failwith "A faire"
+ let cut_genes (dna : dna) : (dna list) =
+  slices_between [A; T; G] [T; A; A] dna
 
 (*---------------------------------------------------------------------------*)
 (*                          CONSENSUS SEQUENCES                              *)
