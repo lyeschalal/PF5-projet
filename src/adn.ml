@@ -112,8 +112,36 @@ type 'a consensus = Full of 'a | Partial of 'a * int | No_consensus
    (Partial (a, n)) if a is the only element of the list with the
    greatest number of occurrences and this number is equal to n,
    No_consensus otherwise. *)
+let rec nb_occ_element (list : 'a list) (element : 'a ) : int =
+    match list with 
+    |[]-> 0
+    |a::r when a=element-> 1+  nb_occ_element r element
+    |a::r -> nb_occ_element r element
+
+
+let cons_uniq xs x = if List.mem x xs then xs else x :: xs
+
+let remove_from_left xs = List.rev (List.fold_left cons_uniq [] xs)
+
+exception Pas_de_max_occ ;;
 let consensus (list : 'a list) : 'a consensus =
-  failwith "À compléter"
+  let rec max_occ_liste  (list_tmp : 'a list)  : int * 'a  =
+    match list_tmp with 
+    |[]-> raise (Pas_de_max_occ )
+    |[a]-> (nb_occ_element list a,a)
+    |a::r ->let occ_tmp = nb_occ_element list a and occ_tmp2 = max_occ_liste r
+        in   match  occ_tmp2  with 
+        |(nb,element ) -> match occ_tmp > nb with 
+          |true -> (occ_tmp,a)
+          |false when occ_tmp = nb -> raise (Pas_de_max_occ ) 
+          | _ -> (nb,element )
+              
+  in try ( match max_occ_liste (remove_from_left list)   with
+      |(0,_) ->  No_consensus
+      |(nb,element)when nb = List.length list -> Full element
+      |(nb,element )-> Partial (element ,nb)) 
+  with 
+  |Pas_de_max_occ-> No_consensus
 
 (*
    consensus [1; 1; 1; 1] = Full 1
