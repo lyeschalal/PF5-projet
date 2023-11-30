@@ -117,11 +117,8 @@ type 'a consensus = Full of 'a | Partial of 'a * int | No_consensus
    (Partial (a, n)) if a is the only element of the list with the
    greatest number of occurrences and this number is equal to n,
    No_consensus otherwise. *)
-let rec nb_occ_element (list : 'a list) (element : 'a ) : int =
-    match list with 
-    |[]-> 0
-    |a::r when a=element-> 1+  nb_occ_element r element
-    |a::r -> nb_occ_element r element
+let rec nb_occ_element (list : 'a list) (element : 'a ) : int = 
+  List.fold_left (fun acc x -> if x = element then acc + 1 else acc) 0 list
 
 
 let cons_uniq xs x = if List.mem x xs then xs else x :: xs
@@ -159,9 +156,17 @@ let consensus (list : 'a list) : 'a consensus =
    position  in the sequences. the lists must be of same length. if all lists
    are empty, return the empty sequence.
  *)
-
-let consensus_sequence (ll : 'a list list) : 'a consensus list =
-  failwith "À compléter"
+ let consensus_sequence (ll : 'a list list) : 'a consensus list  =
+  let rec aux_consensus_sequence acc l =
+    match l with
+    |[] -> List.rev acc
+    | _ -> 
+        let colonne = List.map (fun sous_liste -> List.hd sous_liste) l in 
+        let reste = List.map (fun sous_liste -> List.tl sous_liste) l in
+        match List.mem [] reste with
+        |true -> aux_consensus_sequence  (consensus colonne :: acc) []
+        |false -> aux_consensus_sequence  (consensus colonne :: acc) reste
+  in aux_consensus_sequence [] ll
 
 (*
  consensus_sequence [[1; 1; 1; 1];
