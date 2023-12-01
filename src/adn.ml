@@ -20,20 +20,30 @@ let string_of_base (b : base) : string =
 
 (* explode a string into a char list *)
 let explode (str : string) : char list =
-  failwith "À compléter"
-
+  List.init (String.length str) (fun indice -> str.[indice]);;
+ (* List.init var1 var2  permet de creer une list de taille var1 en appliquant 
+    la fonction donner en var2 pour chaque element de la liste  *)
 
 (* conversions *)
 let base_of_char (c : char) : base =
-  failwith "À compléter"
+  match c with
+   | 'A' -> A
+   | 'C' -> C
+   | 'G' -> G
+   | 'T' -> T
+   | _  -> WC (*les autre cas*)
 
-
+(* convertir string en DNA    *)
 let dna_of_string (s : string) : base list =
-  failwith "À compléter"
+  (* convertir chaque element de la liste retourner par explode en base *)
+  List.map (base_of_char) (explode s)
 
 
+(* convertir DNA en string   *)
 let string_of_dna (seq : dna) : string =
-  failwith "À compléter"
+  (* d'abord convertir ADN en liste de string    *)
+  (* ensuite la liste obtenue avant en string  *)
+  String.concat ""  (List.map (string_of_base) (seq));;
 
 
 
@@ -47,8 +57,12 @@ let string_of_dna (seq : dna) : string =
 
 
 (* if list = pre@suf, return Some suf. otherwise, return None *)
-let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
-  failwith "A faire"
+let rec cut_prefix pre l =
+  match ( pre , l ) with
+  |( _::_ ,[] ) -> None
+  |( [] , r2 ) -> Some r2 
+  |( a::r1 , b::r2 ) -> if a != b then None else cut_prefix r1 r2 ;;
+
 
 (*
   cut_prefix [1; 2; 3] [1; 2; 3; 4] = Some [4]
@@ -60,9 +74,15 @@ let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
 (* return the prefix and the suffix of the first occurrence of a slice,
    or None if this occurrence does not exist.
 *)
-let first_occ (slice : 'a list) (list : 'a list)
-    : ('a list * 'a list) option =
-  failwith "À compléter"
+let rec first_occ slice l = 
+  let rec aux_first_occ before liste =
+    match cut_prefix slice liste with 
+    |Some after -> Some (List.rev before,after)
+    | None ->
+        match liste with
+        | [] -> None
+        | hd::reste -> aux_first_occ (hd::before) reste
+  in aux_first_occ [] l 
 (*
   first_occ [1; 2] [1; 1; 1; 2; 3; 4; 1; 2] = Some ([1; 1], [3; 4; 1; 2])
   first_occ [1; 1] [1; 1; 1; 2; 3; 4; 1; 2] = Some ([], [1; 2; 3; 4; 1; 2])
@@ -70,16 +90,21 @@ let first_occ (slice : 'a list) (list : 'a list)
  *)
 
 
-let rec slices_between
-          (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
-  failwith "A faire"
+ let rec slices_between
+ (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
+match first_occ start list with 
+|None -> []
+|Some (pre,suf) -> match first_occ stop suf with 
+            |None -> []
+            |Some (pre_2 , suf_2) -> pre_2::(slices_between start stop suf_2)
 
-(*
+
+ (*
   slices_between [1; 1] [1; 2] [1; 1; 1; 1; 2; 1; 3; 1; 2] = [[1]]
  *)
 
-let cut_genes (dna : dna) : (dna list) =
-  failwith "A faire"
+ let cut_genes (dna : dna) : (dna list) =
+  slices_between [A; T; G] [T; A; A] dna
 
 (*---------------------------------------------------------------------------*)
 (*                          CONSENSUS SEQUENCES                              *)
@@ -92,11 +117,8 @@ type 'a consensus = Full of 'a | Partial of 'a * int | No_consensus
    (Partial (a, n)) if a is the only element of the list with the
    greatest number of occurrences and this number is equal to n,
    No_consensus otherwise. *)
- let rec nb_occ_element (list : 'a list) (element : 'a ) : int =
-    match list with 
-    |[]-> 0
-    |a::r when a=element-> 1+  nb_occ_element r element
-    |a::r -> nb_occ_element r element
+let rec nb_occ_element (list : 'a list) (element : 'a ) : int = 
+  List.fold_left (fun acc x -> if x = element then acc + 1 else acc) 0 list
 
 
 let cons_uniq xs x = if List.mem x xs then xs else x :: xs
@@ -134,9 +156,17 @@ let consensus (list : 'a list) : 'a consensus =
    position  in the sequences. the lists must be of same length. if all lists
    are empty, return the empty sequence.
  *)
-
-let consensus_sequence (ll : 'a list list) : 'a consensus list =
-  failwith "À compléter"
+ let consensus_sequence (ll : 'a list list) : 'a consensus list  =
+  let rec aux_consensus_sequence acc l =
+    match l with
+    |[] -> List.rev acc
+    | _ -> 
+        let colonne = List.map (fun sous_liste -> List.hd sous_liste) l in 
+        let reste = List.map (fun sous_liste -> List.tl sous_liste) l in
+        match List.mem [] reste with
+        |true -> aux_consensus_sequence  (consensus colonne :: acc) []
+        |false -> aux_consensus_sequence  (consensus colonne :: acc) reste
+  in aux_consensus_sequence [] ll
 
 (*
  consensus_sequence [[1; 1; 1; 1];
