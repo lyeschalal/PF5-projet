@@ -11,7 +11,7 @@ type dna = base list
 
 let string_of_base (b : base) : string =
   match b with
-    A -> "A"
+  | A -> "A"
   | C -> "C"
   | G -> "G"
   | T -> "T"
@@ -25,6 +25,7 @@ let explode (str : string) : char list =
     la fonction donner en var2 pour chaque element de la liste  *)
 
 (* conversions *)
+(* Fonction pour convertir un caractère en base *)
 let base_of_char (c : char) : base =
   match c with
    | 'A' -> A
@@ -34,15 +35,14 @@ let base_of_char (c : char) : base =
    | _  -> WC (*les autre cas*)
 
 (* convertir string en DNA    *)
+(* Fonction pour convertir une chaîne de caractères en séquence d'ADN *)
 let dna_of_string (s : string) : base list =
-  (* convertir chaque element de la liste retourner par explode en base *)
   List.map (base_of_char) (explode s)
 
 
 (* convertir DNA en string   *)
+(* Fonction pour convertir une séquence d'ADN en chaîne de caractères *)
 let string_of_dna (seq : dna) : string =
-  (* d'abord convertir ADN en liste de string    *)
-  (* ensuite la liste obtenue avant en string  *)
   String.concat ""  (List.map (string_of_base) (seq));;
 
 
@@ -57,8 +57,8 @@ let string_of_dna (seq : dna) : string =
 
 
 (* if list = pre@suf, return Some suf. otherwise, return None *)
-let rec cut_prefix pre l =
-  match ( pre , l ) with
+let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
+  match ( pre , list ) with
   |( _::_ ,[] ) -> None
   |( [] , r2 ) -> Some r2 
   |( a::r1 , b::r2 ) -> if a != b then None else cut_prefix r1 r2 ;;
@@ -74,29 +74,56 @@ let rec cut_prefix pre l =
 (* return the prefix and the suffix of the first occurrence of a slice,
    or None if this occurrence does not exist.
 *)
-let rec first_occ slice l = 
-  let rec aux_first_occ before liste =
+(*
+   first_occ slice list recherche la première occurrence de la séquence slice
+   dans la liste, et retourne le préfixe et le suffixe de la liste avant et après
+   cette occurrence. Si aucune occurrence n'est trouvée, la fonction retourne None.
+
+   - Paramètres :
+     - slice : La séquence à rechercher.
+     - list : La liste dans laquelle rechercher l'occurrence.
+
+   - Retour :
+     Une option contenant le préfixe et le suffixe de la liste avant et après
+     la première occurrence de slice, ou None si aucune occurrence n'est trouvée.
+*)
+
+  let first_occ (slice : 'a list) (list : 'a list): ('a list * 'a list) option =
+   let rec aux_first_occ before liste =
     match cut_prefix slice liste with 
     |Some after -> Some (List.rev before,after)
     | None ->
         match liste with
         | [] -> None
         | hd::reste -> aux_first_occ (hd::before) reste
-  in aux_first_occ [] l 
+  in aux_first_occ [] list
 (*
   first_occ [1; 2] [1; 1; 1; 2; 3; 4; 1; 2] = Some ([1; 1], [3; 4; 1; 2])
   first_occ [1; 1] [1; 1; 1; 2; 3; 4; 1; 2] = Some ([], [1; 2; 3; 4; 1; 2])
   first_occ [1; 3] [1; 1; 1; 2; 3; 4; 1; 2] = None
  *)
 
+(*
+   slices_between start stop list recherche des occurrences de la séquence start
+   et stop dans la liste, puis extrait les tranches de la liste entre ces occurrences.
 
- let rec slices_between
- (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
-match first_occ start list with 
-|None -> []
-|Some (pre,suf) -> match first_occ stop suf with 
-            |None -> []
-            |Some (pre_2 , suf_2) -> pre_2::(slices_between start stop suf_2)
+   - Paramètres :
+     - start : La séquence de début à rechercher.
+     - stop : La séquence de fin à rechercher.
+     - list : La liste dans laquelle rechercher les occurrences.
+
+   - Retour :
+     Une liste de tranches de la liste, chaque tranche étant entre une occurrence
+     de start et stop. Si aucune occurrence n'est trouvée, la liste résultante est vide.
+*)
+
+let rec slices_between (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
+  match first_occ start list with
+  | None -> []
+  | Some (pre, suf) ->
+      match first_occ stop suf with
+      | None -> []
+      | Some (pre_2, suf_2) -> pre_2 :: (slices_between start stop suf_2)
 
 
  (*
@@ -117,33 +144,51 @@ type 'a consensus = Full of 'a | Partial of 'a * int | No_consensus
    (Partial (a, n)) if a is the only element of the list with the
    greatest number of occurrences and this number is equal to n,
    No_consensus otherwise. *)
-let rec nb_occ_element (list : 'a list) (element : 'a ) : int = 
+ (*
+   consensus list calcule le consensus d'une liste d'éléments.
+
+   - Paramètre :
+     - list : La liste d'éléments pour laquelle calculer le consensus.
+
+   - Retour :
+     Un variant du type 'a consensus représentant le consensus de la liste.
+     - Full a : Si tous les éléments de la liste sont égaux à a.
+     - Partial (a, n) : Si a est l'unique valeur apparaissant le plus grand nombre
+       de fois dans list et si a apparaît exactement n fois dans list.
+     - No_consensus : Dans tous les autres cas, lorsque la liste est vide ou
+       s'il n'y a pas de consensus clair.
+
+   Remarque : La fonction utilise la fonction auxiliaire remove_from_left pour
+   enlever les éléments répétés dans la liste avant de calculer le consensus.Et aussi la fonction 
+   nb_occ_element pour compter le nombre d'occurence d'un element dans la liste .
+*)
+
+ let rec nb_occ_element (list : 'a list) (element : 'a ) : int = 
   List.fold_left (fun acc x -> if x = element then acc + 1 else acc) 0 list
 
+ let remove_from_left (xs : 'a list) : 'a list =
+  List.rev (List.fold_left (fun acc x -> if List.mem x acc then acc else x :: acc) [] xs)
 
-let cons_uniq xs x = if List.mem x xs then xs else x :: xs
-
-let remove_from_left xs = List.rev (List.fold_left cons_uniq [] xs)
-
-exception Pas_de_max_occ ;;
 let consensus (list : 'a list) : 'a consensus =
-  let rec max_occ_liste  (list_tmp : 'a list)  : int * 'a  =
-    match list_tmp with 
-    |[]-> raise (Pas_de_max_occ )
-    |[a]-> (nb_occ_element list a,a)
-    |a::r ->let occ_tmp = nb_occ_element list a and occ_tmp2 = max_occ_liste r
-        in   match  occ_tmp2  with 
-        |(nb,element ) -> match occ_tmp > nb with 
-          |true -> (occ_tmp,a)
-          |false when occ_tmp = nb -> raise (Pas_de_max_occ ) 
-          | _ -> (nb,element )
-              
-  in try ( match max_occ_liste (remove_from_left list)   with
-      |(0,_) ->  No_consensus
-      |(nb,element)when nb = List.length list -> Full element
-      |(nb,element )-> Partial (element ,nb)) 
-  with 
-  |Pas_de_max_occ-> No_consensus
+    let rec max_occ_list list_tmp =
+      match list_tmp with
+      | [] -> raise Not_found
+      | [a] -> (nb_occ_element list a, a)
+      | a :: r ->
+          let occ_tmp = nb_occ_element list a in
+          let occ_tmp2 = max_occ_list r in
+          match occ_tmp2 with
+          | (nb, element) ->
+              if occ_tmp > nb then (occ_tmp, a)
+              else if occ_tmp = nb then raise Not_found
+              else (nb, element)
+    in
+    try
+      match max_occ_list (remove_from_left list) with
+      | (0, _) -> No_consensus
+      | (nb, element) when nb = List.length list -> Full element
+      | (nb, element) -> Partial (element, nb)
+    with Not_found -> No_consensus
 
 (*
    consensus [1; 1; 1; 1] = Full 1
@@ -156,6 +201,19 @@ let consensus (list : 'a list) : 'a consensus =
    position  in the sequences. the lists must be of same length. if all lists
    are empty, return the empty sequence.
  *)
+ (*
+   consensus_sequence ll calcule le consensus de chaque position dans une liste
+   de séquences.
+
+   - Paramètre :
+     - ll : Une liste de séquences.
+
+   - Retour :
+     Une liste de variantes du type 'a consensus représentant les consensus
+     de chaque position dans les séquences. Si toutes les listes sont vides,
+     la fonction retourne une liste vide.
+     *)
+
  let consensus_sequence (ll : 'a list list) : 'a consensus list  =
   let rec aux_consensus_sequence acc l =
     match l with
