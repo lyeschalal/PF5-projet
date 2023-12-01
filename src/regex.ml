@@ -32,11 +32,19 @@ let rec null e =
   | _ -> false 
   
 
-let rec is_finite e =
-  failwith "À compléter"
+ let rec is_finite e =
+   match e with 
+    |Star a-> is_empty a
+    |Concat(a,b)-> (is_finite a) && (is_finite b)
+    |Alt(a,b) -> (is_finite a) && (is_finite b)
+    |_ -> true
 
 let product l1 l2 =
-  failwith "À compléter"
+  let rec  aux l1' list = 
+    match l1' with 
+    |[]-> List.rev (sort_uniq list)
+    |a::r ->  aux r ((List.map (fun x -> a@x  ) l2)@list)
+  in aux l1  []
 
 let enumerate alphabet e =
   failwith "À compléter"
