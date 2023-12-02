@@ -90,8 +90,17 @@ let rec enumerate alphabet e =
         | (None, None) -> None
       
   
-let rec alphabet_expr e =
-  failwith "À compléter"
+(*renvoie l’ensemble des lettres apparaissant dans e*)
+let alphabet_expr e =
+  let rec aux e liste=
+  match e with 
+  |Base a -> sort_uniq (a::liste)
+  |Concat(a,b)-> aux a (aux b liste) 
+  |Alt(a,b)-> aux a (aux b liste) 
+  |Star a-> aux a liste 
+  |Eps -> sort_uniq liste
+  |Joker-> sort_uniq liste
+in aux e []
 
 type answer =
   Infinite | Accept | Reject
