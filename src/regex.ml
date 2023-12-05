@@ -90,6 +90,9 @@ let rec enumerate alphabet e =
         | (None, None) -> None
       
   
+      
+      
+  
 (*renvoie l’ensemble des lettres apparaissant dans e*)
 let alphabet_expr e =
   let rec aux e liste=
@@ -102,8 +105,26 @@ let alphabet_expr e =
   |Joker-> sort_uniq liste
 in aux e []
 
+
+
 type answer =
   Infinite | Accept | Reject
 
+
+(*renvoie  – Infinite si le langage reconnu par e est infini,
+           – Accept si le langage reconnu par e est fini et contient le mot w,
+           – Reject si le langage reconnu par e est fini et ne contient pas w.*)
+
 let accept_partial e w =
-  failwith "À compléter"
+  match is_finite e with 
+  |false ->Infinite  (* langage infini *)
+  |true -> (
+    let resultat = enumerate w e in 
+      match resultat with
+        |Some res ->( 
+              match List.mem w res  with
+              |true -> Accept (*fini et contient le mot w *)
+              |false ->Reject (*fini et ne contient pas le mot w *)
+              )
+       |None -> Reject       (*fini et ne contient pas le mot w *)
+  )
