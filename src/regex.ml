@@ -23,14 +23,18 @@ let expr_repeat n e =
 ;;
 
 (* Fonction pour vérifier si une expression régulière ne contient que le mot vide *)
-let rec is_empty e =
-  match e with 
-  |Eps -> true  (*cas trivial*)
-  |Concat(a,b) -> (is_empty a)&&(is_empty b)
-  |Star(a)->is_empty a
-  |Alt(a,b) -> (is_empty a)&&(is_empty b) 
-  |Base a -> false (*l'expression ne contient pas de mot vide *)
-  |Joker -> false 
+
+let  is_empty e = 
+  let rec aux l =
+   match l with 
+     |[] -> true (*cas trivial*)
+     |Eps::r -> aux r
+     |Concat(a,b)::r -> aux(a::b::r)
+     |Star(a)::r-> aux(a::r)
+     |Alt(a,b)::r-> aux(a::b::r)
+     |Base(a)::r -> false (*l'expression ne contient pas de mot vide *)
+     |Joker::r -> false 
+  in aux [e]  
 
 let rec null e =
   match e with 
@@ -43,14 +47,17 @@ let rec null e =
   
 
 (* Fonction pour vérifier si e langage reconnu par "e" est fini*)
-let rec is_finite e =
-  match e with 
-  |Star a-> is_empty a  (*vrai si seulement si star ne contient que le mot vide*)
-  |Concat(a,b)-> (is_finite a) && (is_finite b)
-  |Alt(a,b) -> (is_finite a) && (is_finite b)
-  |Eps -> true (*cas trivial*)
-  |Base a -> true (*cas trivial*)
-  |Joker-> true  (*cas trivial*)
+let is_finite e =
+ let rec aux l =
+  match l with 
+  |[]-> true
+  |Star(a)::r-> is_empty a (*vrai si seulement si star ne contient que le mot vide*)
+  |Concat(a,b)::r-> aux(a::b::r)
+  |Alt(a,b)::r -> aux(a::b::r)
+  |Eps::r -> aux r (*cas trivial*)
+  |Base(a)::r -> aux r (*cas trivial*)
+  |Joker::r-> aux r  (*cas trivial*)  
+  in aux [e]  
   
   
 (*renvoie l’ensemble des mots formés de la concaténation
