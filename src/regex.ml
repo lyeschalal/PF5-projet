@@ -1,13 +1,15 @@
 open Regex_base
 
-(**)
 (*renvoie le mot w concaténé n fois avec lui-même*)
-let rec repeat n w =
-  match n with 
-  | 0 -> [] 
-  | _ -> w @ repeat (n-1) w
-     
-     
+ 
+  let repeat n w =
+    let rec aux acc nbr =
+      match nbr with
+      | 0 ->  acc
+      | _ -> aux (w @ acc) (nbr - 1)
+    in
+    aux [] n
+   
 (*envoie une expression régulière qui reconnaît les mots
 formés de la concaténation de n mots reconnus par e. *)          
 let expr_repeat n e =

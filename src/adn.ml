@@ -57,8 +57,8 @@ let string_of_dna (seq : dna) : string =
 
 
 (* if list = pre@suf, return Some suf. otherwise, return None *)
-let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
-  match ( pre , list ) with
+let rec  cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
+  match ( slice , list ) with
   |( _::_ ,[] ) -> None
   |( [] , r2 ) -> Some r2 
   |( a::r1 , b::r2 ) -> if a != b then None else cut_prefix r1 r2 ;;
@@ -103,28 +103,35 @@ let cut_prefix (slice : 'a list) (list : 'a list) : 'a list option =
   first_occ [1; 3] [1; 1; 1; 2; 3; 4; 1; 2] = None
  *)
 
-(*
-   slices_between start stop list recherche des occurrences de la séquence start
-   et stop dans la liste, puis extrait les tranches de la liste entre ces occurrences.
 
-   - Paramètres :
-     - start : La séquence de début à rechercher.
-     - stop : La séquence de fin à rechercher.
-     - list : La liste dans laquelle rechercher les occurrences.
 
-   - Retour :
-     Une liste de tranches de la liste, chaque tranche étant entre une occurrence
-     de start et stop. Si aucune occurrence n'est trouvée, la liste résultante est vide.
-*)
+ (*
+    slices_between start stop list recherche des occurrences de la séquence start
+    et stop dans la liste, puis extrait les tranches de la liste entre ces occurrences.
+ 
+    - Paramètres :
+      - start : La séquence de début à rechercher.
+      - stop : La séquence de fin à rechercher.
+      - list : La liste dans laquelle rechercher les occurrences.
+ 
+    - Retour :
+      Une liste de tranches de la liste, chaque tranche étant entre une occurrence
+      de start et stop. Si aucune occurrence n'est trouvée, la liste résultante est vide.
+ *)
 
-let rec slices_between (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =
-  match first_occ start list with
-  | None -> []
-  | Some (pre, suf) ->
-      match first_occ stop suf with
-      | None -> []
-      | Some (pre_2, suf_2) -> pre_2 :: (slices_between start stop suf_2)
-
+  let slices_between (start : 'a list) (stop : 'a list) (list : 'a list) : 'a list list =       
+    let rec aux acc list =
+      (* Recherche de la première occurrence de la séquence 'start' dans la liste *)
+       match first_occ start list with
+        | None -> List.rev acc (* Aucune occurrence trouvée, renvoie l'accumulateur inversé *)
+        | Some (pre, suf) ->
+           (* Recherche de la première occurrence de la séquence 'stop' dans la suite 'suf' *)
+            match first_occ stop suf with
+            | None -> List.rev acc (* Aucune occurrence trouvée, renvoie l'accumulateur inversé *)
+            | Some (pre_2, suf_2) -> aux (pre_2 :: acc) suf_2 
+              (* Une occurrence de 'stop' est trouvée, ajoute la portion entre 'start' et 'stop'
+               à l'accumulateur et appelle récursivement avec la suite 'suf_2' *)
+        in aux [] list    
 
  (*
   slices_between [1; 1] [1; 2] [1; 1; 1; 1; 2; 1; 3; 1; 2] = [[1]]
@@ -163,29 +170,38 @@ type 'a consensus = Full of 'a | Partial of 'a * int | No_consensus
    nb_occ_element pour compter le nombre d'occurence d'un element dans la liste .
 *)
 
- let rec nb_occ_element (list : 'a list) (element : 'a ) : int = 
+(*Retourne le nombre d'occurence d'un element dans la liste*)
+let rec nb_occ_element (list : 'a list) (element : 'a ) : int = 
   List.fold_left (fun acc x -> if x = element then acc + 1 else acc) 0 list
 
- let remove_from_left (xs : 'a list) : 'a list =
+(* Retourne une nouvelle liste où seuls les premiers occurrences de chaque élément sont conservés,
+  dans l'ordre d'apparition*)  
+let remove_from_left (xs : 'a list) : 'a list =
   List.rev (List.fold_left (fun acc x -> if List.mem x acc then acc else x :: acc) [] xs)
 
 let consensus (list : 'a list) : 'a consensus =
+    (* Fonction auxiliaire récursive qui prend une liste sans doublants 'list_tmp' pour trouver
+        l'élément avec le plus grand nombre d'occurrences dans 'list' *)
     let rec max_occ_list list_tmp =
       match list_tmp with
       | [] -> raise Not_found
       | [a] -> (nb_occ_element list a, a)
       | a :: r ->
+          (*on compte le nombre d'occurence de 'a' dans 'list' *)
           let occ_tmp = nb_occ_element list a in
+          (*on cherche le nombre avec la plus grande occurence dans le reste 'r' *)
           let occ_tmp2 = max_occ_list r in
           match occ_tmp2 with
+          (*on compare 'occ_tmp' et 'occ_tmp2' et on retourne le plus grand avec son occurence, 
+            dans le cas d'égalité on retourne l'exception 'Not_found' *)
           | (nb, element) ->
-              if occ_tmp > nb then (occ_tmp, a)
+              if occ_tmp > nb then (occ_tmp, a) 
               else if occ_tmp = nb then raise Not_found
               else (nb, element)
     in
     try
+      (*on fait appel à max_occ_list sur la liste 'list' sans doublants *)
       match max_occ_list (remove_from_left list) with
-      | (0, _) -> No_consensus
       | (nb, element) when nb = List.length list -> Full element
       | (nb, element) -> Partial (element, nb)
     with Not_found -> No_consensus
@@ -194,6 +210,7 @@ let consensus (list : 'a list) : 'a consensus =
    consensus [1; 1; 1; 1] = Full 1
    consensus [1; 1; 1; 2] = Partial (1, 3)
    consensus [1; 1; 2; 2] = No_consensus
+  with Not_found -> No_conse
  *)
 
 (* return the consensus sequence of a list of sequences : for each position
@@ -214,17 +231,21 @@ let consensus (list : 'a list) : 'a consensus =
      la fonction retourne une liste vide.
      *)
 
- let consensus_sequence (ll : 'a list list) : 'a consensus list  =
+  let consensus_sequence (ll : 'a list list) : 'a consensus list  =
+  (* Fonction auxiliaire récursive *)
   let rec aux_consensus_sequence acc l =
     match l with
-    |[] -> List.rev acc
+    | [] -> List.rev acc  (* Toutes les listes sont traitées, retourne l'accumulateur inversé *)
     | _ -> 
+        (* Extraction de la colonne actuelle et du reste des séquences *)
         let colonne = List.map (fun sous_liste -> List.hd sous_liste) l in 
         let reste = List.map (fun sous_liste -> List.tl sous_liste) l in
+        (* Vérification si toutes les séquences sont vides *)
         match List.mem [] reste with
-        |true -> aux_consensus_sequence  (consensus colonne :: acc) []
-        |false -> aux_consensus_sequence  (consensus colonne :: acc) reste
+        | true -> aux_consensus_sequence (consensus colonne :: acc) []  (* Toutes vides, ajoute le dernier consensus  *)
+        | false -> aux_consensus_sequence (consensus colonne :: acc) reste  (* Ajoute le consensus et passe à la colonne *)
   in aux_consensus_sequence [] ll
+
 
 (*
  consensus_sequence [[1; 1; 1; 1];
